@@ -110,9 +110,12 @@ void construire_table_noeuds(char *chemin){
     fclose(f);  
     return nbr_noeud;
 
-
 }
 
+void trouver_indice(char **table, int nb_noeuds, char *id);
+// Pour chaque noeud attribut un indice
+
+void lire_aretes(char *chemin, char **table, int nb_noeuds, int nb_aretes);
 
 
 
@@ -122,3 +125,4 @@ void construire_table_noeuds(char *chemin){
 
 
 
+Ò
