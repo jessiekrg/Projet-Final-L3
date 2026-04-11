@@ -181,6 +181,12 @@ void free_table_noeuds(char **table, int nb_noeuds) {
     free(table);
 }
 
+// 2. Construire le graphe en mémoire
+
+
+
+
+
 
 
 
