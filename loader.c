@@ -29,7 +29,7 @@ int compter_noeuds(char *chemin){
     FILE *f = fopen(chemin ,"r");
         if (f == NULL) {
             perror("Erreur d'ouverture");
-            return NULL;
+            return -1; // J'ai modifié NULL par -1 car la fonction tu as mis int pour type de retout de la fonction 
         }
     char ligne[256];
     int nbr_noeud = 0;
@@ -49,7 +49,7 @@ int compter_noeuds(char *chemin){
         }
 
         if (!trouve) {
-            strcpy(noeud[nbr_noeud],source);;
+            strcpy(noeud[nbr_noeud],source); // suppression de ";;""
             nbr_noeud++;
         }
 
@@ -148,7 +148,7 @@ Arete* lire_aretes(char *chemin, char **table, int nb_noeuds, int nb_aretes){
     FILE *f = fopen(chemin ,"r");
         if (f == NULL) {
             perror("Erreur d'ouverture");
-            return 1;
+            return NULL; // pareille
         }
     int compteur = 0;
     char ligne[256];
@@ -181,7 +181,131 @@ void free_table_noeuds(char **table, int nb_noeuds) {
     free(table);
 }
 
-// 2. Construire le graphe en mémoire
+// 2. Construire le graphe en mémoire (liste d'ajacence)
+
+typedef struct Voisin {
+    int id;
+    struct Voisin *suivant;
+    double poids;
+    } Voisin ;
+
+
+typedef struct {
+    int nb_noeuds;
+    int nb_aretes;
+    Voisin **Tableau_Voisins;
+    double poids_total;
+    } Graphe ;
+
+Graphe* initialiser_graphe(int nombre_noeuds, int nombre_aretes){
+    Graphe *Mon_Graphe = malloc(sizeof(Graphe));
+
+    Mon_Graphe -> nb_noeuds = nombre_noeuds;
+    Mon_Graphe -> nb_aretes = nombre_aretes;
+    Mon_Graphe -> Tableau_Voisins = malloc(sizeof(Voisin*) * nombre_noeuds);
+    Mon_Graphe -> poids_total = 0;
+
+    for (int i = 0; i < nombre_noeuds; i++) {
+        
+        Mon_Graphe->Tableau_Voisins[i] = NULL;
+        }
+    
+    return Mon_Graphe;
+    }
+
+void Ajouter_Aretes(Graphe *G, int a, int b, double Nouveau_poids ){
+
+    Voisin *Nouveau_Voisin_de_A = malloc(sizeof(Voisin));
+    if (Nouveau_Voisin_de_A == NULL){
+        return;
+        }
+
+    Nouveau_Voisin_de_A -> id = b;
+    Nouveau_Voisin_de_A -> suivant = G->Tableau_Voisins[a];
+    Nouveau_Voisin_de_A -> poids = Nouveau_poids;
+    
+    G -> Tableau_Voisins[a] = Nouveau_Voisin_de_A; // Tableau[a] → [ami 1] → [ami 2] → rien  => Tableau[a] → [nouveau] → [ami 1] → [ami 2] → rien
+
+
+    Voisin *Nouveau_Voisin_de_B = malloc(sizeof(Voisin));
+    if (Nouveau_Voisin_de_B == NULL){
+        return;
+        }
+
+    Nouveau_Voisin_de_B -> id = a;
+    Nouveau_Voisin_de_B -> suivant = G->Tableau_Voisins[b];
+    Nouveau_Voisin_de_B -> poids =  Nouveau_poids;
+    
+    G -> Tableau_Voisins[b] = Nouveau_Voisin_de_B; // Tableau[a] → [ami 1] → [ami 2] → rien  => Tableau[a] → [nouveau] → [ami 1] → [ami 2] → rien
+
+    G->poids_total += Nouveau_poids;
+    }
+
+Graphe* construire_graphe(Arete *table_aretes, int nombre_noeuds, int nombre_aretes) {
+
+    Graphe *Mon_Reseau = initialiser_graphe(nombre_noeuds, nombre_aretes);
+
+    for (int i = 0; i < nombre_aretes; i++){ 
+        Ajouter_Aretes(Mon_Reseau, table_aretes[i].source, table_aretes[i].cible, 1.0);
+        }
+    
+    return Mon_Reseau;
+    }
+
+void free_graphe(Graphe *G) {
+    if (G == NULL) return; 
+    for (int i = 0; i < G->nb_noeuds; i++) {
+        Voisin *courant = G->Tableau_Voisins[i];
+        
+        
+        while (courant != NULL) {
+            Voisin *temp = courant;
+            courant = courant->suivant;
+            free(temp);
+        }
+    }
+    free(G->Tableau_Voisins);
+    free(G);
+}
+
+// Gérer les changements de communauté 
+void retirer_noeud(i, communaute_A){}
+void inserer_noeud(i, communaute_B){}
+
+
+int main(int argc, char *argv[]) {
+
+    if (argc < 2){
+        return -1;
+        }
+    
+    char *chemin = argv[1];
+    int nb_noeuds = compter_noeuds(chemin);
+    int nb_aretes = compter_ligne(chemin);
+
+    char **table_noeud = construire_table_noeuds(chemin);
+    Arete *table_arete = lire_aretes(chemin,table_noeud, nb_noeuds, nb_aretes);
+
+    Graphe *G = construire_graphe(table_arete,nb_noeuds,nb_aretes);
+
+    // LOUVAIN 
+
+    // initialisation communautés ou chaque noeud est sa communauté initialement 
+
+    int *communautes = malloc(sizeof(int)*nb_noeuds);
+    for (int i = 0; i < nb_noeuds; i++){
+        communautes[i] = i;
+    }
+
+    double *k = malloc(sizeof(double)*nb_noeuds);
+    for (int i = 0; i < nb_noeuds; i++) {
+        k[i] = 0;
+        Voisin *courant = G -> Tableau_Voisins[i];
+        while (courant != NULL){
+            k[i] += courant -> poids;
+            courant = courant -> suivant;
+        }
+    }
 
 
 
@@ -190,8 +314,5 @@ void free_table_noeuds(char **table, int nb_noeuds) {
 
 
 
-
-
-
-
-
+    return 0;
+}
