@@ -451,9 +451,13 @@ int main(int argc, char *argv[]) {
         
         }
     
-    if (!noeuds_bougent) {
+        if (!noeuds_bougent) {
             break;
             }
+        
+        // PHASE 2 : Agregation
+
+    
     }
 
 
