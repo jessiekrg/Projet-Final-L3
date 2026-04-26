@@ -275,12 +275,13 @@ int main(int argc, char *argv[]) {
     if (argc < 2){
         return -1;
         }
-    
+
     char *chemin = argv[1];
     int nb_noeuds = compter_noeuds(chemin);
     int nb_aretes = compter_ligne(chemin);
 
     char **table_noeud = construire_table_noeuds(chemin);
+
     Arete *table_arete = lire_aretes(chemin,table_noeud, nb_noeuds, nb_aretes);
 
     Graphe *G = construire_graphe(table_arete,nb_noeuds,nb_aretes);
@@ -319,12 +320,12 @@ int main(int argc, char *argv[]) {
         sigma_tot[i] = k[i]; 
         }
 
-    // Initialisation de m qui est la somme de toutes les arêtes du graphe
-    double m = 0;
+    // Initialisation de m qui est la somme de toutes les poids des arêtes du graphe
+    double m = G -> poids_total;
 
-    // en pratique je peux réunir les deux boucle mais pour l'instant je laisse comme ca
 
     // Boucle phase 1 : Parcourir tous les noeuds 
+
 
 
 
