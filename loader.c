@@ -271,7 +271,7 @@ void free_graphe(Graphe *G) {
 // Les fonctions pour gérer les changements de communautés en particulier 
 
 void retirer_noeud(int i, int *communautes, Graphe *G, double *sigma_in, double *sigma_tot, double *k) {
-    // 
+    // communauté du noeud i
     int communaute = communautes[i];
     // calculer ki_in ( ki_in = poids des arêtes entre noeuds i et ses voisins de la meme communauté)
     double ki_in = 0;
@@ -280,22 +280,32 @@ void retirer_noeud(int i, int *communautes, Graphe *G, double *sigma_in, double 
     while (Voisin_noeud != NULL){ // Parcours tous les voisin du noeud i 
         if (communautes[Voisin_noeud -> id] == communaute ){ 
             ki_in += Voisin_noeud -> poids;
-            Voisin_noeud = Voisin_noeud-> suivant;
             }
+        Voisin_noeud = Voisin_noeud-> suivant;
         }
     
-    sigma_in[i] -= 2* ki_in; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
-    sigma_tot[i] -= k[i]; // on enleve à sigma_tot (la somme des poids des arêtes incidentes à tous les noeuds de la commu dont i appartient) la somme des tous les poids des noeuds incidents au noeud i )
+    sigma_in[communaute] -= 2* ki_in; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
+    sigma_tot[communaute] -= k[i]; // on enleve à sigma_tot (la somme des poids des arêtes incidentes à tous les noeuds de la commu dont i appartient) la somme des tous les poids des noeuds incidents au noeud i )
 
     communautes[i] = -1; // retirer le noeud i de sa communauté
 }
 
 
-void retirer_noeud(int i, int communaute_cible, int *communautes, Graphe *G, double *sigma_in, double *sigma_tot, double *k) {
+void rajouter_noeud(int i, int communaute_cible, int *communautes, Graphe *G, double *sigma_in, double *sigma_tot, double *k) {
+    communautes[i] = communaute_cible;
 
-    
+    double ki_in = 0;
 
+    Voisin *Voisin_noeud = G -> Tableau_Voisins[i];
+    while (Voisin_noeud != NULL){ // Parcours tous les voisin du noeud i 
+        if (communautes[Voisin_noeud -> id] == communaute_cible ){ 
+            ki_in += Voisin_noeud -> poids;
+            }
+        Voisin_noeud = Voisin_noeud-> suivant;
+        }
 
+    sigma_in[communaute_cible] += 2* ki_in; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
+    sigma_tot[communaute_cible] += k[i]; // on enleve à sigma_tot (la somme des poids des arêtes incidentes à tous les noeuds de la commu dont i appartient) la somme des tous les poids des noeuds incidents au noeud i )
     }
 
 int main(int argc, char *argv[]) {
