@@ -182,7 +182,6 @@ void free_table_noeuds(char **table, int nb_noeuds) {
 }
 
 // 2. Construire le graphe en mémoire (liste d'ajacence)
-
 typedef struct Voisin {
     int id;
     struct Voisin *suivant;
@@ -257,7 +256,6 @@ void free_graphe(Graphe *G) {
     for (int i = 0; i < G->nb_noeuds; i++) {
         Voisin *courant = G->Tableau_Voisins[i];
         
-        
         while (courant != NULL) {
             Voisin *temp = courant;
             courant = courant->suivant;
@@ -272,9 +270,8 @@ void free_graphe(Graphe *G) {
 void retirer_noeud(i, communaute_A){}
 void inserer_noeud(i, communaute_B){}
 
-
 int main(int argc, char *argv[]) {
-
+    // 
     if (argc < 2){
         return -1;
         }
@@ -290,22 +287,46 @@ int main(int argc, char *argv[]) {
 
     // LOUVAIN 
 
-    // initialisation communautés ou chaque noeud est sa communauté initialement 
-
+    // initialisation communautés ou chaque noeud constitue sa propre communauté initialement
     int *communautes = malloc(sizeof(int)*nb_noeuds);
     for (int i = 0; i < nb_noeuds; i++){
-        communautes[i] = i;
+        communautes[i] = i; // chaque noeud = sa propre communauté
     }
 
-    double *k = malloc(sizeof(double)*nb_noeuds);
-    for (int i = 0; i < nb_noeuds; i++) {
-        k[i] = 0;
-        Voisin *courant = G -> Tableau_Voisins[i];
-        while (courant != NULL){
-            k[i] += courant -> poids;
-            courant = courant -> suivant;
+    // Calcul de k[i] pour chaque noeuds i (k[i] =  la somme des poids de toutes les arêtes connectées au  noeud i)
+    double *k = malloc(sizeof(double)*nb_noeuds); // k
+    for (int i = 0; i < nb_noeuds; i++) { 
+        k[i] = 0; // initialisation à 0 
+
+        Voisin *courant = G -> Tableau_Voisins[i]; // Initialisation du tableau des voisins du noeud i 
+        while (courant != NULL){ // On parcourt tous les voisins du noeud i tant qu'il y a des voisins 
+            k[i] += courant -> poids; // On incrémente la valeur ki avec le poids de l'arete (qui lie le voisin au noeud i) 
+            courant = courant -> suivant; // on passe au voisin suivant (tant que qu'il y en a un)
         }
     }
+
+    // Calcul de sigma_in = sommes des tous les poids des arêtes internes (cad juste les arêtes entre noeuds de la communauté)
+    double *sigma_in = malloc(sizeof(double) * nb_noeuds);
+    for (int i = 0; i < nb_noeuds; i++ ){
+        // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 (au début du moins 1 commu = 1 noeud )
+        sigma_in[i] = 0;
+        }
+
+    // Calcul de sigma_tot = sommes des tous les poids des arêtes internes + incidente aux noeuds de la communauté courante
+    double *sigma_tot = malloc(sizeof(double) * nb_noeuds);
+    for (int i = 0; i < nb_noeuds; i++ ){
+        // Pour chaque commu (noeuds au départ) initialement sigma_tot[i] = k[i] (sommes des poids des arêtes incidentes au noeud de la communauté courante (donc le noeud au début) ce  qui est k[i])
+        sigma_tot[i] = k[i]; 
+        }
+
+    // Initialisation de m qui est la somme de toutes les arêtes du graphe
+    double m = 0;
+
+    // en pratique je peux réunir les deux boucle mais pour l'instant je laisse comme ca
+
+    // Boucle phase 1 : Parcourir tous les noeuds 
+
+
 
 
 
