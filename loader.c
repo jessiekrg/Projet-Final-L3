@@ -274,17 +274,24 @@ void retirer_noeud(int i, int *communautes, Graphe *G, double *sigma_in, double 
     // communauté du noeud i
     int communaute = communautes[i];
     // calculer ki_in ( ki_in = poids des arêtes entre noeuds i et ses voisins de la meme communauté)
-    double ki_in = 0;
+    double poids_arete_vers_autre = 0;
+    double poids_boucle_soi = 0;
 
     Voisin *Voisin_noeud = G -> Tableau_Voisins[i];
     while (Voisin_noeud != NULL){ // Parcours tous les voisin du noeud i 
-        if (communautes[Voisin_noeud -> id] == communaute ){ 
-            ki_in += Voisin_noeud -> poids;
+
+        if (Voisin_noeud -> id == i ){ 
+            poids_boucle_soi += Voisin_noeud ->poids;
             }
+
+        else if (communautes[Voisin_noeud -> id] == communaute ){ 
+            poids_arete_vers_autre += Voisin_noeud -> poids;
+            }
+        
         Voisin_noeud = Voisin_noeud-> suivant;
         }
     
-    sigma_in[communaute] -= 2* ki_in; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
+    sigma_in[communaute] -= (2* poids_arete_vers_autre) + poids_boucle_soi; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
     sigma_tot[communaute] -= k[i]; // on enleve à sigma_tot (la somme des poids des arêtes incidentes à tous les noeuds de la commu dont i appartient) la somme des tous les poids des noeuds incidents au noeud i )
 
     communautes[i] = -1; // retirer le noeud i de sa communauté
@@ -294,22 +301,40 @@ void retirer_noeud(int i, int *communautes, Graphe *G, double *sigma_in, double 
 void rajouter_noeud(int i, int communaute_cible, int *communautes, Graphe *G, double *sigma_in, double *sigma_tot, double *k) {
     communautes[i] = communaute_cible;
 
-    double ki_in = 0;
+    double poids_arete_vers_autre = 0;
+    double poids_boucle_soi = 0;
 
     Voisin *Voisin_noeud = G -> Tableau_Voisins[i];
     while (Voisin_noeud != NULL){ // Parcours tous les voisin du noeud i 
-        if (communautes[Voisin_noeud -> id] == communaute_cible ){ 
-            ki_in += Voisin_noeud -> poids;
+        if (Voisin_noeud -> id == i ){ 
+            poids_boucle_soi += Voisin_noeud ->poids;
             }
+            
+        else if (communautes[Voisin_noeud -> id] == communaute_cible ){ 
+            poids_arete_vers_autre += Voisin_noeud -> poids;
+            }
+        
         Voisin_noeud = Voisin_noeud-> suivant;
         }
 
-    sigma_in[communaute_cible] += 2* ki_in; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
+    sigma_in[communaute_cible] += (2* poids_arete_vers_autre) + poids_boucle_soi ; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
     sigma_tot[communaute_cible] += k[i]; // on enleve à sigma_tot (la somme des poids des arêtes incidentes à tous les noeuds de la commu dont i appartient) la somme des tous les poids des noeuds incidents au noeud i )
     }
 
+
+
+
+double delta_Q(double sigma_in, double sigma_tot, double k, double ki_in_c , double m){
+    double a = ( (sigma_in + 2*ki_in_c)/(2*m) ) - ( (sigma_tot + k)/(2*m)*(sigma_tot + k)/(2*m) );
+    double b = (sigma_in / (2*m) ) - ( (sigma_tot)/(2*m)*(sigma_tot)/(2*m) ) - (k/(2*m))*(k/(2*m));
+
+    return a-b;
+}
+
 int main(int argc, char *argv[]) {
-    // 
+
+
+    
     if (argc < 2){
         return -1;
         }
@@ -334,12 +359,14 @@ int main(int argc, char *argv[]) {
         communautes[i] = i; // chaque noeud = sa propre communauté
     }
 
-    // Calcul de k[i] pour chaque noeuds i (k[i] =  la somme des poids de toutes les arêtes connectées au  noeud i)
+
+
+    // Calcul de k[i] pour chaque noeuds i (k[i] =  la somme des poids/degrés de toutes les arêtes connectées au  noeud i)
     double *k = malloc(sizeof(double)*nb_noeuds); // k
     for (int i = 0; i < nb_noeuds; i++) { 
         k[i] = 0; // initialisation à 0 
 
-        Voisin *courant = G -> Tableau_Voisins[i]; // Initialisation du tableau des voisins du noeud i 
+        Voisin *courant = G -> Tableau_Voisins[i]; // Initialisation du tableau des voisins dee chaque noeuds 
         while (courant != NULL){ // On parcourt tous les voisins du noeud i tant qu'il y a des voisins 
             k[i] += courant -> poids; // On incrémente la valeur ki avec le poids de l'arete (qui lie le voisin au noeud i) 
             courant = courant -> suivant; // on passe au voisin suivant (tant que qu'il y en a un)
@@ -349,7 +376,7 @@ int main(int argc, char *argv[]) {
     // Calcul de sigma_in = sommes des tous les poids des arêtes internes (cad juste les arêtes entre noeuds de la communauté)
     double *sigma_in = malloc(sizeof(double) * nb_noeuds);
     for (int i = 0; i < nb_noeuds; i++ ){
-        // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 (au début du moins 1 commu = 1 noeud )
+        // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 
         sigma_in[i] = 0;
         }
 
@@ -360,24 +387,73 @@ int main(int argc, char *argv[]) {
         sigma_tot[i] = k[i]; 
         }
 
+
     // Initialisation de m qui est la somme de toutes les poids des arêtes du graphe
     double m = G -> poids_total;
 
-
     // BOUCLE PHASE 1 ET 2 
 
-    while (1){
-        // Boucle phase 1 : Parcourir tous les noeuds 
-        int noeuds_bougent = 1;
+    while (1){ // boucle qui répète l'itération de la phase 1 et 2 
 
-        while (noeuds_bougent){
+        // PHASE 1 : Parcourir tous les noeuds et calculer le gain de modularatié maximal (meilleur communauté) 
+
+        int noeuds_bougent = 1; // valeur "boolenne" qui sert à dire "tant qu'il y a des noeuds qui se déplacent on continue" 
+
+        while (noeuds_bougent) {
+
             noeuds_bougent = 0;
 
-            
+            // pour chaque noeud on va les retirer leur communauté courante et voir la meilleure commu voisine
+            for (int i = 0; i < nb_noeuds ; i++){
+                int communaute_noeud_i = communautes[i]; // j'enregistre la commu courante du noeud i
 
+                retirer_noeud(i, communautes, G, sigma_in, sigma_tot, k); // retirer le noeud i de sa communauté courante
+                // initialisation des variable qui définiront la meilleure communauté pour le noeud i et son deltaQ maximal
+                int meilleure_commu = communaute_noeud_i;
+                double meilleur_delta_Q = 0;
+
+                // On regarde chacun des noeuds voisin (en particulier les communautés voisines)
+                Voisin *voisin = G -> Tableau_Voisins[i]; 
+                while (voisin != NULL){ // tant qu'il y a des voisins on regarde le communauté (c) respectif
+                    int c = communautes[voisin -> id]; // c <- communauté dont le voisin courant de i appartient
+                    if (c < 0){ // ca c'est si le voisin a été retiré de sa communauté dans ce cas -> next
+                        voisin = voisin -> suivant;
+                        continue;
+                    }
+                    
+                    // calculer ki_in vers c (cad : pour chaque communauté (c) voisinant notre noeud i , on regarde (ENCORE) les voisins du noeud i pour calculer ki_In)
+                    Voisin *voisin_c = G -> Tableau_Voisins[i];
+                    double ki_in_c = 0; 
+                    while (voisin_c != NULL){ // tant qu'il y a des voisins
+                        if (communautes[voisin_c -> id] == c){ // si le voisin appartient à la communauté c bah on incrémente le poids apporté par ce voisin à ki_in
+                            ki_in_c += voisin_c -> poids;
+                        }
+                        voisin_c = voisin_c -> suivant; // thank you next 
+                    }
+
+                    double delta_Q_c = delta_Q(sigma_in[c], sigma_tot[c], k[i], ki_in_c, m ); // calculer du delta_q
+                    if (delta_Q_c > meilleur_delta_Q) {
+                        meilleure_commu = c;
+                        meilleur_delta_Q = delta_Q_c;
+                        }
+
+                    voisin = voisin -> suivant;  
+                }
+                
+                rajouter_noeud(i, meilleure_commu, communautes, G, sigma_in, sigma_tot, k);
+                if (meilleure_commu != communaute_noeud_i ) {
+                    noeuds_bougent = 1;
+                    }
+            }
+
+
+            
+        
         }
     
-    
+    if (!noeuds_bougent) {
+            break;
+            }
     }
 
 
