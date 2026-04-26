@@ -364,36 +364,22 @@ int main(int argc, char *argv[]) {
     double m = G -> poids_total;
 
 
-    // Boucle phase 1 : Parcourir tous les noeuds 
+    // BOUCLE PHASE 1 ET 2 
 
-    int noeuds_bougent = 1;
+    while (1){
+        // Boucle phase 1 : Parcourir tous les noeuds 
+        int noeuds_bougent = 1;
 
-    while (noeuds_bougent) { //  si la condition est vraie (différente de 0)
+        while (noeuds_bougent){
+            noeuds_bougent = 0;
 
-        noeuds_bougent = 0;
+            
 
-
-        // Calculer ki_in
-
-
-        // 1. EXTRACTION : On retire le noeud i de sa communauté pour tester
-        // On met à jour sigma_tot[comm_actuelle] et sigma_in[comm_actuelle]
-
-        // 2. RECHERCHE : Quelles sont les communautés voisines ?
-        // On parcourt les voisins du noeud i.
-        // On ne teste QUE les communautés des voisins (enjeux de rapidité).
-        
         }
+    
+    
+    }
 
 
-
-
-
-
-
-
-
-
-
-    return 0;
+    
 }
