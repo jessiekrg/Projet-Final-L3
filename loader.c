@@ -266,9 +266,37 @@ void free_graphe(Graphe *G) {
     free(G);
 }
 
-// Gérer les changements de communauté 
-void retirer_noeud(i, communaute_A){}
-void inserer_noeud(i, communaute_B){}
+
+
+// Les fonctions pour gérer les changements de communautés en particulier 
+
+void retirer_noeud(int i, int *communautes, Graphe *G, double *sigma_in, double *sigma_tot, double *k) {
+    // 
+    int communaute = communautes[i];
+    // calculer ki_in ( ki_in = poids des arêtes entre noeuds i et ses voisins de la meme communauté)
+    double ki_in = 0;
+
+    Voisin *Voisin_noeud = G -> Tableau_Voisins[i];
+    while (Voisin_noeud != NULL){ // Parcours tous les voisin du noeud i 
+        if (communautes[Voisin_noeud -> id] == communaute ){ 
+            ki_in += Voisin_noeud -> poids;
+            Voisin_noeud = Voisin_noeud-> suivant;
+            }
+        }
+    
+    sigma_in[i] -= 2* ki_in; // on enlève à sigma in (= la sommes des poids des arêtes des noeuds de la communauté dont i appartient) la sommes des poids des arêtes incident au noeud i qui lie des noeuds qui appartiennent à la commu
+    sigma_tot[i] -= k[i]; // on enleve à sigma_tot (la somme des poids des arêtes incidentes à tous les noeuds de la commu dont i appartient) la somme des tous les poids des noeuds incidents au noeud i )
+
+    communautes[i] = -1; // retirer le noeud i de sa communauté
+}
+
+
+void retirer_noeud(int i, int communaute_cible, int *communautes, Graphe *G, double *sigma_in, double *sigma_tot, double *k) {
+
+    
+
+
+    }
 
 int main(int argc, char *argv[]) {
     // 
@@ -285,6 +313,8 @@ int main(int argc, char *argv[]) {
     Arete *table_arete = lire_aretes(chemin,table_noeud, nb_noeuds, nb_aretes);
 
     Graphe *G = construire_graphe(table_arete,nb_noeuds,nb_aretes);
+
+
 
     // LOUVAIN 
 
@@ -325,6 +355,25 @@ int main(int argc, char *argv[]) {
 
 
     // Boucle phase 1 : Parcourir tous les noeuds 
+
+    int noeuds_bougent = 1;
+
+    while (noeuds_bougent) { //  si la condition est vraie (différente de 0)
+
+        noeuds_bougent = 0;
+
+
+        // Calculer ki_in
+
+
+        // 1. EXTRACTION : On retire le noeud i de sa communauté pour tester
+        // On met à jour sigma_tot[comm_actuelle] et sigma_in[comm_actuelle]
+
+        // 2. RECHERCHE : Quelles sont les communautés voisines ?
+        // On parcourt les voisins du noeud i.
+        // On ne teste QUE les communautés des voisins (enjeux de rapidité).
+        
+        }
 
 
 
