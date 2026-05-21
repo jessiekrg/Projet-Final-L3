@@ -333,11 +333,9 @@ double delta_Q(double sigma_in, double sigma_tot, double k, double ki_in_c , dou
 
 int main(int argc, char *argv[]) {
 
-
-    
     if (argc < 2){
         return -1;
-        }
+    }
 
     char *chemin = argv[1];
     int nb_noeuds = compter_noeuds(chemin);
@@ -378,14 +376,14 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < nb_noeuds; i++ ){
         // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 
         sigma_in[i] = 0;
-        }
+    }
 
     // Calcul de sigma_tot = sommes des tous les poids des arêtes internes + incidente aux noeuds de la communauté courante
     double *sigma_tot = malloc(sizeof(double) * nb_noeuds);
     for (int i = 0; i < nb_noeuds; i++ ){
         // Pour chaque commu (noeuds au départ) initialement sigma_tot[i] = k[i] (sommes des poids des arêtes incidentes au noeud de la communauté courante (donc le noeud au début) ce  qui est k[i])
         sigma_tot[i] = k[i]; 
-        }
+    }
 
 
     // Initialisation de m qui est la somme de toutes les poids des arêtes du graphe
@@ -443,12 +441,9 @@ int main(int argc, char *argv[]) {
                 rajouter_noeud(i, meilleure_commu, communautes, G, sigma_in, sigma_tot, k);
                 if (meilleure_commu != communaute_noeud_i ) {
                     noeuds_bougent = 1;
-                    }
+                }
             }
 
-
-            
-        
         }
     
         if (!noeuds_bougent) {
@@ -457,8 +452,123 @@ int main(int argc, char *argv[]) {
         
         // PHASE 2 : Agregation
 
-    
-    }
+        // On cherche le nombre de communautés distinctes qui ont été formées
+
+        int *vu = calloc(nb_noeuds, sizeof(int));  // réserve mémoire + chaque octet à zéro
+
+        // 2. Marquer les communautés présentes
+        for (int i = 0; i < nb_noeuds; i++) {
+            vu[communautes[i]] = 1;
+        }
+
+        // 3. Compter les communautés marquées
+        int nbr_communaute = 0;
+        for (int i = 0; i < nb_noeuds; i++) {
+            if (vu[i] == 1) {
+                nbr_communaute++;
+            }
+        }
+
+        double **matrice_poids = malloc(nbr_communaute * sizeof(double *));
+        for(int i = 0; i < nbr_communaute; i++) 
+            matrice_poids[i] = calloc(nbr_communaute, sizeof(double));
+
+        for (int i = 0; i < nbr_communaute; i++){
+            for (int j = 0; j < nbr_communaute; j++){
+                matrice_poids[i][j] = 0;
+            }
+        }
+
+        int *mapping = malloc(nb_noeuds* sizeof(int));
+        for (int i = 0; i<nb_noeuds; i++){
+            mapping[i] = -1;
+        }
+
+        int indice = 0;
+        for (int i = 0; i < nb_noeuds; i++) {
+            if (mapping[communautes[i]] == -1 ){
+                mapping[communautes[i]] = indice;
+                indice++;
+            }
+            
+        }
+
+
+        for (int i = 0; i < G ->nb_noeuds; i++){
+
+            int comm_u = mapping[communautes[i]];
+            Voisin *v = G->Tableau_Voisins[i];
+
+            while (v!= NULL){
+                int comm_v = mapping[communautes[v->id]];
+                double poids_u_v = v -> poids;
+
+                matrice_poids[comm_u][comm_v] += poids_u_v;
+
+                v = v->suivant; // on met à jour v pour qu'il pointe vers le voisin suivant
+            }
+        }   
+
+        
+
+        Graphe *nouveau_graphe = initialiser_graphe(nbr_communaute,0);
+
+        for (int i = 0; i < nbr_communaute; i++){
+            for (int j = i; j< nbr_communaute; j++){
+                double poids = matrice_poids[i][j]/2.0;
+                Ajouter_Aretes(nouveau_graphe, i, j, poids);
+            }
+        }
+
+        // Libération de la mémoire pour passer à l'itération suivante
+        for(int i = 0; i < nbr_communaute; i++) {
+            free(matrice_poids[i]);
+        }
+        free(matrice_poids);
+
+        free_graphe(G);
+        free(communautes);
+        free(k);
+        free(sigma_in);
+        free(sigma_tot);
+        free(mapping);
+        free(vu);
+        
+        G = nouveau_graphe;
+        nb_noeuds = nbr_communaute;
+
+        //on crée a nouveau un tableau communauté où chaque super noeud = sa propre communauté
+        int *communautes = malloc(sizeof(int)*nb_noeuds);
+        for (int i = 0; i < nb_noeuds; i++){
+            communautes[i] = i; // chaque noeud = sa propre communauté
+        }
+
+        double *k = malloc(sizeof(double)*nb_noeuds); // k
+        for (int i = 0; i < nb_noeuds; i++) { 
+            k[i] = 0; // initialisation à 0 
+
+            Voisin *courant = G -> Tableau_Voisins[i]; // Initialisation du tableau des voisins dee chaque noeuds 
+            while (courant != NULL){ // On parcourt tous les voisins du noeud i tant qu'il y a des voisins 
+                k[i] += courant -> poids; // On incrémente la valeur ki avec le poids de l'arete (qui lie le voisin au noeud i) 
+                courant = courant -> suivant; // on passe au voisin suivant (tant que qu'il y en a un)
+            }
+        }
+
+        double *sigma_in = malloc(sizeof(double) * nb_noeuds);
+        for (int i = 0; i < nb_noeuds; i++ ){
+            // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 
+            sigma_in[i] = 0;
+            }
+
+        
+        // Calcul de sigma_tot = sommes des tous les poids des arêtes internes + incidente aux noeuds de la communauté courante
+        double *sigma_tot = malloc(sizeof(double) * nb_noeuds);
+        for (int i = 0; i < nb_noeuds; i++ ){
+            // Pour chaque commu (noeuds au départ) initialement sigma_tot[i] = k[i] (sommes des poids des arêtes incidentes au noeud de la communauté courante (donc le noeud au début) ce  qui est k[i])
+            sigma_tot[i] = k[i]; 
+            }
+        
+        double m = G -> poids_total;
 
 
     
