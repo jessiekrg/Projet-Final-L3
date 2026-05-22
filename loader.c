@@ -1,11 +1,22 @@
 #include <stdio.h> 
 #include <stdlib.h>  // malloc 
 #include <string.h>  // strcmp et strcpy
+#include "uthash.h"
+
+
+// Structure qui sera hachée
+typedef struct{
+    char noeud[50]; // chaque noeud lu = clef
+    int valeur;
+    UT_hash_handle hh;
+} Noeud;
 
 typedef struct {
     int source;
     int cible;
 } Arete;
+
+Noeud *tbl_noeud = NULL;
 
 int compter_ligne(char *chemin){
     FILE *f = fopen(chemin ,"r");
@@ -24,162 +35,73 @@ int compter_ligne(char *chemin){
 }
 
 
-int compter_noeuds(char *chemin){
-// Lire le fichier et compter le nombre de nœuds uniques
+int inserer(Noeud **tbl_noeud, char *noeud, int *indice_actuel){
+    Noeud *n; // permet de stocker ou pas la valeur trouver dans le tableau
+
+    // Vérifier si (valeur,clef) est déjà présent dans le tableau
+    HASH_FIND_STR(*tbl_noeud,noeud,n);
+    if (n == NULL){ // donc si la clef n'est pas trouvé dans le tableau
+        n = malloc(sizeof(Noeud));
+        strcpy(n->noeud, noeud);
+        n -> valeur =  *indice_actuel;
+        HASH_ADD_STR(*tbl_noeud,noeud,n);
+        (*indice_actuel)++;
+        return n->valeur; 
+    }
+
+    return n->valeur;;
+}
+
+int construire_table_noeuds(char *chemin){
     FILE *f = fopen(chemin ,"r");
         if (f == NULL) {
             perror("Erreur d'ouverture");
-            return -1; // J'ai modifié NULL par -1 car la fonction tu as mis int pour type de retout de la fonction 
+            return -1;
+            
         }
     char ligne[256];
-    int nbr_noeud = 0;
-    int max = compter_ligne(chemin) * 2;
-    char noeud[max][20];
+    int indice = 0;
     while (fgets(ligne, sizeof(ligne),f)  != NULL){
-        char source[20];
-        char cible[20]; 
+        char source[50];
+        char cible[50]; 
         sscanf(ligne, "%s %s", source, cible);
 
-        int trouve = 0;
-        for (int i = 0; i< nbr_noeud; i++){
-            if (strcmp(source, noeud[i]) == 0){
-                trouve = 1;
-                break;
-            }
-        }
+        inserer(&tbl_noeud,source,&indice);
 
-        if (!trouve) {
-            strcpy(noeud[nbr_noeud],source); // suppression de ";;""
-            nbr_noeud++;
-        }
-
-        trouve = 0;
-        for (int i = 0; i< nbr_noeud; i++){
-            if (strcmp(cible, noeud[i]) == 0){
-                trouve = 1;
-                break;
-            }
-        }
-
-        if (!trouve) {
-            strcpy(noeud[nbr_noeud],cible);
-            nbr_noeud++;
-        }
+        inserer(&tbl_noeud,cible,&indice);
     }
-    fclose(f);  
-    return nbr_noeud;
+
+    fclose(f);
+
+    return indice; // retourne le nombre total de noeud trouvé
 }
 
-char** construire_table_noeuds(char *chemin){
-// Lire le fichier et stocker tous les nœuds uniques dans un tableau
+Arete *construire_table_arete(char *chemin,int nb_aretes){
+    Arete *table_aretes = malloc(nb_aretes * sizeof(Arete));
+
     FILE *f = fopen(chemin ,"r");
         if (f == NULL) {
             perror("Erreur d'ouverture");
             return NULL;
+            
         }
     char ligne[256];
-    int nbr_noeud = compter_noeuds(chemin);
-    char **table_noeuds = malloc(nbr_noeud * sizeof(char*));
-
-    // malloc pour chaque string individuelle
-
-    for (int i = 0; i < nbr_noeud; i++){
-        table_noeuds[i] = malloc(20 * sizeof(char));
-    }
-
-
-    int nbr_ajouter = 0;
-    while (fgets(ligne, sizeof(ligne),f)  != NULL){
-        char source[20];
-        char cible[20]; 
-        sscanf(ligne, "%s %s", source, cible);
-
-        int trouve = 0;
-        for (int i = 0; i< nbr_noeud; i++){
-            if (strcmp(source, table_noeuds[i]) == 0){
-                trouve = 1;
-                break;
-            }
-        }
-
-        if (!trouve) {
-            strcpy( table_noeuds[nbr_ajouter],source);
-            nbr_ajouter++;
-        }
-
-        trouve = 0;
-        for (int i = 0; i< nbr_noeud; i++){
-            if (strcmp(cible, table_noeuds[i]) == 0){
-                trouve = 1;
-                break;
-            }
-        }
-
-        if (!trouve) {
-            strcpy(table_noeuds[nbr_ajouter],cible);
-            nbr_ajouter++;
-        }
-    }
-
-    fclose(f);  
-    return table_noeuds;
-
-}
-
-// Pour chaque noeud attribut un indice
-int trouver_indice(char **table, int nb_noeuds, char *id){
-    for (int i = 0; i < nb_noeuds; i++) {
-        if (strcmp(table[i], id) == 0) {
-            return i;
-        }
-    }
-    return - 1; // identifiant n'existe pas dans la table
-}
-
-
-
-Arete* lire_aretes(char *chemin, char **table, int nb_noeuds, int nb_aretes){
-    Arete *table_aretes = malloc(nb_aretes * sizeof(Arete));
-    if (table_aretes == NULL) {
-    perror("Erreur malloc");
-    return NULL;
-}
-    
-    FILE *f = fopen(chemin ,"r");
-        if (f == NULL) {
-            perror("Erreur d'ouverture");
-            return NULL; // pareille
-        }
     int compteur = 0;
-    char ligne[256];
+    int indice = 0;
     while (fgets(ligne, sizeof(ligne),f)  != NULL){
-        char source[20];
-        char cible[20]; 
+        char source[50];
+        char cible[50]; 
         sscanf(ligne, "%s %s", source, cible);
 
-        int indice_source = trouver_indice(table,nb_noeuds,source);
-        int indice_cible = trouver_indice(table,nb_noeuds,cible);
-
-        table_aretes[compteur].source = indice_source;
-        table_aretes[compteur].cible = indice_cible;
+        table_aretes[compteur].source = inserer(&tbl_noeud,source,&indice);
+        table_aretes[compteur].cible = inserer(&tbl_noeud,cible,&indice);
 
         compteur++;
-     
     }
-
     fclose(f);
-    return table_aretes;
-
+    return table_aretes; // On retourne le pointeur vers le tableau ( c'est un ** )
 }
 
-
-void free_table_noeuds(char **table, int nb_noeuds) {
-// Libère mémoire allouée par construire_table_noeuds
-    for (int i = 0; i < nb_noeuds; i++) {
-        free(table[i]);
-    }
-    free(table);
-}
 
 // 2. Construire le graphe en mémoire (liste d'ajacence)
 typedef struct Voisin {
@@ -338,12 +260,10 @@ int main(int argc, char *argv[]) {
     }
 
     char *chemin = argv[1];
-    int nb_noeuds = compter_noeuds(chemin);
+    int nb_noeuds = construire_table_noeuds(chemin);
     int nb_aretes = compter_ligne(chemin);
 
-    char **table_noeud = construire_table_noeuds(chemin);
-
-    Arete *table_arete = lire_aretes(chemin,table_noeud, nb_noeuds, nb_aretes);
+    Arete *table_arete = construire_table_arete(chemin, nb_aretes);
 
     Graphe *G = construire_graphe(table_arete,nb_noeuds,nb_aretes);
 
@@ -388,6 +308,13 @@ int main(int argc, char *argv[]) {
 
     // Initialisation de m qui est la somme de toutes les poids des arêtes du graphe
     double m = G -> poids_total;
+
+    // Libération de la table de hachage après construction du graphe (on en a plus besoin pq le graphe G est construit)
+    Noeud *actuel, *tmp;
+    HASH_ITER(hh, tbl_noeud, actuel, tmp) {
+        HASH_DEL(tbl_noeud, actuel);
+        free(actuel);
+    }
 
     // BOUCLE PHASE 1 ET 2 
 
@@ -445,10 +372,6 @@ int main(int argc, char *argv[]) {
             }
 
         }
-    
-        if (!noeuds_bougent) {
-            break;
-            }
         
         // PHASE 2 : Agregation
 
@@ -469,16 +392,6 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        double **matrice_poids = malloc(nbr_communaute * sizeof(double *));
-        for(int i = 0; i < nbr_communaute; i++) 
-            matrice_poids[i] = calloc(nbr_communaute, sizeof(double));
-
-        for (int i = 0; i < nbr_communaute; i++){
-            for (int j = 0; j < nbr_communaute; j++){
-                matrice_poids[i][j] = 0;
-            }
-        }
-
         int *mapping = malloc(nb_noeuds* sizeof(int));
         for (int i = 0; i<nb_noeuds; i++){
             mapping[i] = -1;
@@ -493,6 +406,13 @@ int main(int argc, char *argv[]) {
             
         }
 
+        typedef struct {
+            long long clef; // Combine comm_u et comm_v
+            double poids;
+            UT_hash_handle hh;
+        }H_aretes;
+
+        H_aretes *h_tableau = NULL;
 
         for (int i = 0; i < G ->nb_noeuds; i++){
 
@@ -500,31 +420,51 @@ int main(int argc, char *argv[]) {
             Voisin *v = G->Tableau_Voisins[i];
 
             while (v!= NULL){
-                int comm_v = mapping[communautes[v->id]];
-                double poids_u_v = v -> poids;
+                H_aretes *h;
 
-                matrice_poids[comm_u][comm_v] += poids_u_v;
+                int comm_v = mapping[communautes[v->id]];
+                // On fait en sorte que c1 est <= à c2 pour éviter doublon
+                int c1 = (comm_u < comm_v) ? comm_u : comm_v;
+                int c2 = (comm_u < comm_v) ? comm_v : comm_u;
+                
+                long long clef = ((long long)c1 << 32) | (unsigned int)c2;
+                HASH_FIND(hh,h_tableau,&clef,sizeof(long long),h);
+                if (h == NULL){
+                    h = malloc(sizeof(H_aretes));
+                    h ->clef = clef;
+                    h -> poids = 0;
+                    HASH_ADD(hh, h_tableau, clef, sizeof(long long), h);
+                }
+                h-> poids += v -> poids;
 
                 v = v->suivant; // on met à jour v pour qu'il pointe vers le voisin suivant
             }
-        }   
+        }
 
+        // On créer les arêtes du nouveau graphe
         
-
         Graphe *nouveau_graphe = initialiser_graphe(nbr_communaute,0);
 
-        for (int i = 0; i < nbr_communaute; i++){
-            for (int j = i; j< nbr_communaute; j++){
-                double poids = matrice_poids[i][j]/2.0;
-                Ajouter_Aretes(nouveau_graphe, i, j, poids);
-            }
-        }
+        // Parcours de la table de hachage
+        H_aretes *cur2,*tmp2;
+        HASH_ITER(hh, h_tableau, cur2, tmp2){
+            long long clef = cur2 -> clef;
+            double poids = cur2 -> poids; // On rencontre le couple (u,v) deux fois donc on divise le poids trouvé par 2
+
+            int a = (int)(clef >> 32);
+            int b = (int)(clef & 0xFFFFFFFF);
+
+            Ajouter_Aretes(nouveau_graphe, a, b, poids);
+        }     
 
         // Libération de la mémoire pour passer à l'itération suivante
-        for(int i = 0; i < nbr_communaute; i++) {
-            free(matrice_poids[i]);
+
+        Noeud *actuel3, *tmp3;
+        HASH_ITER(hh, h_tableau, actuel3, tmp3) {
+            HASH_DEL(h_tableau, actuel);
+            free(actuel);
         }
-        free(matrice_poids);
+
 
         free_graphe(G);
         free(communautes);
@@ -538,12 +478,12 @@ int main(int argc, char *argv[]) {
         nb_noeuds = nbr_communaute;
 
         //on crée a nouveau un tableau communauté où chaque super noeud = sa propre communauté
-        int *communautes = malloc(sizeof(int)*nb_noeuds);
+        communautes = malloc(sizeof(int)*nb_noeuds);
         for (int i = 0; i < nb_noeuds; i++){
             communautes[i] = i; // chaque noeud = sa propre communauté
         }
 
-        double *k = malloc(sizeof(double)*nb_noeuds); // k
+        k = malloc(sizeof(double)*nb_noeuds); // k
         for (int i = 0; i < nb_noeuds; i++) { 
             k[i] = 0; // initialisation à 0 
 
@@ -554,7 +494,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        double *sigma_in = malloc(sizeof(double) * nb_noeuds);
+        sigma_in = malloc(sizeof(double) * nb_noeuds);
         for (int i = 0; i < nb_noeuds; i++ ){
             // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 
             sigma_in[i] = 0;
@@ -562,14 +502,18 @@ int main(int argc, char *argv[]) {
 
         
         // Calcul de sigma_tot = sommes des tous les poids des arêtes internes + incidente aux noeuds de la communauté courante
-        double *sigma_tot = malloc(sizeof(double) * nb_noeuds);
+        sigma_tot = malloc(sizeof(double) * nb_noeuds);
         for (int i = 0; i < nb_noeuds; i++ ){
             // Pour chaque commu (noeuds au départ) initialement sigma_tot[i] = k[i] (sommes des poids des arêtes incidentes au noeud de la communauté courante (donc le noeud au début) ce  qui est k[i])
             sigma_tot[i] = k[i]; 
             }
         
-        double m = G -> poids_total;
+        m = G -> poids_total;
 
+        if (!noeuds_bougent) {
+            break;
+        }
 
+    }
     
 }
