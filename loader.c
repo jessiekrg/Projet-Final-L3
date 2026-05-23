@@ -1,7 +1,7 @@
 #include <stdio.h> 
 #include <stdlib.h>  // malloc 
 #include <string.h>  // strcmp et strcpy
-#include "uthash.h"
+#include "uthash.h" // bibliothèque pour pouvoir manipuler des fonctions de hachage
 
 
 // Structure qui sera hachée
@@ -22,7 +22,7 @@ int compter_ligne(char *chemin){
     FILE *f = fopen(chemin ,"r");
         if (f == NULL) {
             perror("Erreur d'ouverture");
-            return 1;
+            return -1;
         }
     char ligne[256];
     int nbr_ligne = 0;
@@ -261,6 +261,9 @@ int main(int argc, char *argv[]) {
 
     char *chemin = argv[1];
     int nb_noeuds = construire_table_noeuds(chemin);
+
+    int nb_noeuds_og = nb_noeuds; // permet de le nb og de noeuds pour la représentation graphique
+
     int nb_aretes = compter_ligne(chemin);
 
     Arete *table_arete = construire_table_arete(chemin, nb_aretes);
@@ -316,6 +319,13 @@ int main(int argc, char *argv[]) {
         free(actuel);
     }
 
+    int *communaute_final = malloc(sizeof(int)*nb_noeuds);
+    for (int i = 0; i<nb_noeuds_og; i++){
+        communaute_final[i] = i; // Chaque noeud = sa propre communauté
+    }
+
+    
+
     // BOUCLE PHASE 1 ET 2 
 
     while (1){ // boucle qui répète l'itération de la phase 1 et 2 
@@ -362,16 +372,23 @@ int main(int argc, char *argv[]) {
                         meilleur_delta_Q = delta_Q_c;
                         }
 
-                    voisin = voisin -> suivant;  
+                    voisin = voisin -> suivant;
+                    printf("sigma_in=%.4f sigma_tot=%.4f k=%.4f ki_in=%.4f m=%.4f → deltaQ=%.6f\n",sigma_in[c], sigma_tot[c], k[i], ki_in_c, m, delta_Q_c);
+
                 }
                 
                 rajouter_noeud(i, meilleure_commu, communautes, G, sigma_in, sigma_tot, k);
                 if (meilleure_commu != communaute_noeud_i ) {
                     noeuds_bougent = 1;
                 }
+
+                
             }
+            
 
         }
+        
+
         
         // PHASE 2 : Agregation
 
@@ -391,6 +408,11 @@ int main(int argc, char *argv[]) {
                 nbr_communaute++;
             }
         }
+
+        if (nb_noeuds == nbr_communaute) {
+            break;
+        }
+        
 
         int *mapping = malloc(nb_noeuds* sizeof(int));
         for (int i = 0; i<nb_noeuds; i++){
@@ -441,6 +463,12 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        for (int i = 0; i<nb_noeuds_og; i++){
+            communaute_final[i] = mapping[communautes[communaute_final[i]]];
+
+        }
+
+
         // On créer les arêtes du nouveau graphe
         
         Graphe *nouveau_graphe = initialiser_graphe(nbr_communaute,0);
@@ -449,7 +477,7 @@ int main(int argc, char *argv[]) {
         H_aretes *cur2,*tmp2;
         HASH_ITER(hh, h_tableau, cur2, tmp2){
             long long clef = cur2 -> clef;
-            double poids = cur2 -> poids; // On rencontre le couple (u,v) deux fois donc on divise le poids trouvé par 2
+            double poids = cur2 -> poids/2.0; // On rencontre le couple (u,v) deux fois donc on divise le poids trouvé par 2
 
             int a = (int)(clef >> 32);
             int b = (int)(clef & 0xFFFFFFFF);
@@ -459,10 +487,11 @@ int main(int argc, char *argv[]) {
 
         // Libération de la mémoire pour passer à l'itération suivante
 
-        Noeud *actuel3, *tmp3;
+        H_aretes *actuel3 = NULL;
+        H_aretes *tmp3 = NULL;
         HASH_ITER(hh, h_tableau, actuel3, tmp3) {
-            HASH_DEL(h_tableau, actuel);
-            free(actuel);
+            HASH_DEL(h_tableau, actuel3);
+            free(actuel3);
         }
 
 
@@ -476,6 +505,8 @@ int main(int argc, char *argv[]) {
         
         G = nouveau_graphe;
         nb_noeuds = nbr_communaute;
+
+
 
         //on crée a nouveau un tableau communauté où chaque super noeud = sa propre communauté
         communautes = malloc(sizeof(int)*nb_noeuds);
@@ -510,10 +541,16 @@ int main(int argc, char *argv[]) {
         
         m = G -> poids_total;
 
-        if (!noeuds_bougent) {
-            break;
+    }
+
+    FILE *f = fopen("communaute.txt", "w");
+        if (f == NULL) {
+            perror("Impossible d'ouvrir le fichier pour écriture");
+            return -1;
+        }
+        for(int i = 0; i<nb_noeuds_og; i++){
+            fprintf(f,"%d,%d\n", i, communaute_final[i]);
         }
 
-    }
-    
+        fclose(f);
 }
