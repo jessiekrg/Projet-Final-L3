@@ -308,9 +308,15 @@ int main(int argc, char *argv[]) {
 
     // Calcul de sigma_in = sommes des tous les poids des arêtes internes (cad juste les arêtes entre noeuds de la communauté)
     double *sigma_in = malloc(sizeof(double) * nb_noeuds);
-    for (int i = 0; i < nb_noeuds; i++ ){
-        // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 
+    for (int i = 0; i < nb_noeuds; i++ ) {
         sigma_in[i] = 0;
+        Voisin *courant = G->Tableau_Voisins[i];
+        while (courant != NULL) {
+            if (courant->id == i) { 
+                sigma_in[i] += courant->poids;
+            }
+            courant = courant->suivant;
+        }
     }
 
     // Calcul de sigma_tot = sommes des tous les poids des arêtes internes + incidente aux noeuds de la communauté courante
@@ -537,10 +543,18 @@ int main(int argc, char *argv[]) {
         }
 
         sigma_in = malloc(sizeof(double) * nb_noeuds);
-        for (int i = 0; i < nb_noeuds; i++ ){
-            // Pour chaque communauté (noeuds au départ) initialement sigma_in[i] = 0 
-            sigma_in[i] = 0;
+        for (int i = 0; i < nb_noeuds; i++ ) {
+            sigma_in[i] = 0; 
+            
+            // On parcourt les voisins pour voir s'il y a une boucle sur soi-même
+            Voisin *courant = G->Tableau_Voisins[i];
+            while (courant != NULL) {
+                if (courant->id == i) { // Si le voisin est le nœud lui-même (self-loop)
+                    sigma_in[i] += courant->poids;
+                }
+                courant = courant->suivant;
             }
+        }
 
         
         // Calcul de sigma_tot = sommes des tous les poids des arêtes internes + incidente aux noeuds de la communauté courante
