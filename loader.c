@@ -253,6 +253,18 @@ double delta_Q(double sigma_in, double sigma_tot, double k, double ki_in_c , dou
     return a-b;
 }
 
+double calculer_modularite_finale(int nb_noeuds, double *sigma_in, double *sigma_tot, double m) {
+    double Q = 0;
+    for (int i = 0; i < nb_noeuds; i++) {
+        if (sigma_tot[i] > 0) {
+            double term1 = sigma_in[i] / (2.0 * m);
+            double term2 = (sigma_tot[i] / (2.0 * m)) * (sigma_tot[i] / (2.0 * m));
+            Q += (term1 - term2);
+        }
+    }
+    return Q;
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc < 2){
@@ -324,7 +336,6 @@ int main(int argc, char *argv[]) {
         communaute_final[i] = i; // Chaque noeud = sa propre communauté
     }
 
-    
 
     // BOUCLE PHASE 1 ET 2 
 
@@ -373,7 +384,7 @@ int main(int argc, char *argv[]) {
                         }
 
                     voisin = voisin -> suivant;
-                    printf("sigma_in=%.4f sigma_tot=%.4f k=%.4f ki_in=%.4f m=%.4f → deltaQ=%.6f\n",sigma_in[c], sigma_tot[c], k[i], ki_in_c, m, delta_Q_c);
+                    
 
                 }
                 
@@ -542,6 +553,10 @@ int main(int argc, char *argv[]) {
         m = G -> poids_total;
 
     }
+
+    double Q_final = calculer_modularite_finale(nb_noeuds, sigma_in, sigma_tot, m);
+
+    printf("Modularite finale Q = %.6f\n", Q_final);
 
     FILE *f = fopen("communaute.txt", "w");
         if (f == NULL) {
