@@ -572,11 +572,14 @@ int main(int argc, char *argv[]) {
 
     printf("Modularite finale Q = %.6f\n", Q_final);
 
+
+
     FILE *f = fopen("communaute.txt", "w");
         if (f == NULL) {
             perror("Impossible d'ouvrir le fichier pour écriture");
             return -1;
         }
+        fprintf(f,"%f\n",Q_final);
         for(int i = 0; i<nb_noeuds_og; i++){
             fprintf(f,"%d,%d\n", i, communaute_final[i]);
         }

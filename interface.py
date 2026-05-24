@@ -22,6 +22,7 @@ index_to_node = {str(i): noeuds[i] for i in range(len(noeuds))}
 # Charger les communautés avec le bon mapping
 communautes = {}
 with open("communaute.txt", "r") as f:
+    modularite = f.readline()
     for line in f:
         line = line.strip()
         if not line:
@@ -48,7 +49,7 @@ pos = nx.spring_layout(G, seed=42)
 nx.draw(G, pos, node_color=couleurs, node_size=30, edge_color="#aaaaaa", linewidths=0.3, with_labels=False)
 plt.title("Graphe - Communautés Louvain")
 plt.figtext(0.02, 0.02, 
-    f"Nœuds : {G.number_of_nodes()}\nArêtes : {G.number_of_edges()}\nCommunautés : {len(set(communautes.values()))}",
+    f"Nœuds : {G.number_of_nodes()}\nArêtes : {G.number_of_edges()}\nCommunautés : {len(set(communautes.values()))}\nModularité : {modularite}",
     fontsize=9, verticalalignment="bottom",
     bbox=dict(facecolor="white", alpha=0.7, boxstyle="round"))
 plt.tight_layout()
