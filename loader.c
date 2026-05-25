@@ -42,7 +42,7 @@ int inserer(Noeud **tbl_noeud, char *noeud, int *indice_actuel){
     HASH_FIND_STR(*tbl_noeud,noeud,n);
     if (n == NULL){ // donc si la clef n'est pas trouvé dans le tableau
         n = malloc(sizeof(Noeud));
-        strcpy(n->noeud, noeud);
+        strcpy(n->noeud, noeud); 
         n -> valeur =  *indice_actuel;
         HASH_ADD_STR(*tbl_noeud,noeud,n);
         (*indice_actuel)++;
@@ -331,11 +331,7 @@ int main(int argc, char *argv[]) {
     double m = G -> poids_total;
 
     // Libération de la table de hachage après construction du graphe (on en a plus besoin pq le graphe G est construit)
-    Noeud *actuel, *tmp;
-    HASH_ITER(hh, tbl_noeud, actuel, tmp) {
-        HASH_DEL(tbl_noeud, actuel);
-        free(actuel);
-    }
+
 
     int *communaute_final = malloc(sizeof(int)*nb_noeuds);
     for (int i = 0; i<nb_noeuds_og; i++){
@@ -544,6 +540,7 @@ int main(int argc, char *argv[]) {
 
         sigma_in = malloc(sizeof(double) * nb_noeuds);
         for (int i = 0; i < nb_noeuds; i++ ) {
+
             sigma_in[i] = 0; 
             
             // On parcourt les voisins pour voir s'il y a une boucle sur soi-même
@@ -572,6 +569,11 @@ int main(int argc, char *argv[]) {
 
     printf("Modularite finale Q = %.6f\n", Q_final);
 
+    Noeud *actuel, *tmp;
+    HASH_ITER(hh, tbl_noeud, actuel, tmp) {
+        HASH_DEL(tbl_noeud, actuel);
+        free(actuel);
+    }
 
 
     FILE *f = fopen("communaute.txt", "w");
