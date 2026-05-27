@@ -30,17 +30,17 @@ with open("communaute.txt", "r") as f:
         idx, comm = line.split(',')
         node_name = index_to_node.get(idx.strip())
         if node_name:
-            communautes[node_name] = int(comm.strip())
+            communautes[node_name] = int(comm.strip()) # Associe la protéine à sa communauté
 
 
 
 
 for node in G.nodes():
-    G.nodes[node]['group'] = communautes.get(node, 0)
+    G.nodes[node]['group'] = communautes.get(node, 0) # Enregistre l'ID de communauté comme un attribut du nœud
 
 # Couleurs par communauté
 groupes = [G.nodes[n]['group'] for n in G.nodes()]
-couleurs = [cm.tab20(g % 20) for g in groupes]
+couleurs = [cm.tab20(g % 20) for g in groupes] # Associe une couleur distincte (parmi 20 de la palette tab20) à chaque groupe
 
 # Affichage
 plt.figure(figsize=(12, 8))
